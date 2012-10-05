@@ -1,0 +1,208 @@
+<?php
+/**
+ *
+ * @file ajax_pane.module
+ * 
+ */
+
+define('AJAX_PANE_PANELS_REQUIRED_CTOOLS_API', '1.7.2');
+
+/**
+ * Implementation of hook_menu.
+ */
+function ajax_pane_menu() {
+  return array(
+    'ajax-pane/get-pane/%/%' => array(
+      'title' => 'AJAX pane handler',
+      'page callback' => 'ajax_pane_panels_pane_handler',
+      'page arguments' => array(2, 3),
+      'access callback' => TRUE,
+      'type' => MENU_CALLBACK
+    ),
+  );
+}
+
+
+/**
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function ajax_pane_ctools_plugin_directory($module, $plugin) {
+  // Safety: go away if CTools is not at an appropriate version.
+  if (!module_invoke('ctools', 'api_version', AJAX_PANE_PANELS_REQUIRED_CTOOLS_API)) {
+    return;
+  }
+  if ($module == 'page_manager' || $module == 'panels' || $module == 'ctools') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Menu handler to serve individual panel-panes via AJAX.
+ *
+ * If the pane uses context, the task_name, context_string and q variables will
+ * be set.
+ */
+function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL, $context_string = NULL, $request_q = '') {
+  require_once DRUPAL_ROOT . '/sites/all/modules/contrib/panels/plugins/display_renderers/panels_renderer_standard.class.php';
+  require_once DRUPAL_ROOT . '/sites/all/modules/contrib/panels/includes/plugins.inc';
+  require_once DRUPAL_ROOT . '/sites/all/modules/contrib/ctools/includes/content.inc';
+  $context_args = array();
+  if (!empty($request_q)) {
+    $context_args = ajax_pane_decode_query($request_q);
+  }
+
+  $display = panels_load_display($display_id);    
+
+  if (!is_null($task_name)) {
+    // Get the context for this pane.
+    list($args, $contexts) = ajax_pane_panels_get_task_context($task_name);
+
+    $display->context = $contexts;
+    $display->args = $args;
+  }
+
+  $display = panels_load_display($display_id);
+  $pane = $display->content[$pane_id];
+  $renderer = panels_get_renderer_handler('standard', $display);
+
+  $panel_renderer = new panels_renderer_standard();
+  $panel_renderer->init($renderer->plugin,$display);
+
+  $content = ctools_content_render($pane->type, $pane->subtype, $pane->configuration, array(), $panel_renderer->display->args, $panel_renderer->display->context);
+  $content = theme('panels_pane', array('content' => $content, 'pane' => $pane, 'display' => $panel_renderer->display));
+
+  echo $content;
+  die();
+}
+
+/**
+ * Decode the query string passed
+ * @param string
+ * @return array
+ */
+function ajax_pane_decode_query($query) {
+  $query = unserialize(base64_decode($query));
+  if ($query) {
+    foreach ($query as $name => $value) {
+      $_GET[$name] = $value;
+      $_REQUEST[$name] = $value;
+    }
+  }
+  return $query;
+}
+
+
+/**
+ * Implementation of hook_panels_pane_content_alter().
+ */
+function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
+  // Bail out if it's not handled by AJAX Pane.
+  if (empty($pane->cache)) {
+    return;
+  }
+  if (!is_array($pane->cache) || $pane->cache['method'] != 'ajax_pane') {
+    return;
+  }
+
+  $display = panels_get_current_page_display();
+
+  // The cache-key variable is set by the panel-context render function.
+  list($context, $task_name, $handler_name) = explode(':', $display->cache_key);
+
+  // Build the esi tag.
+  $url = "ajax-pane/get-pane/{$pane->did}/{$pane->pid}";
+  if (array_key_exists('context', $pane->configuration)) {
+    // Add the page-manager task name.
+    $url .= '/' . $task_name;
+    // Add the name of the context which is supplied to this pane.
+    $url .= '/' . $pane->configuration['context'];
+  }
+  else{
+    // add dummy strings so I keep the same 
+    // order in the parser
+
+    // Add the page-manager task name.
+    $url .= '/n';
+    // Add the name of the context which is supplied to this pane.
+    $url .= '/n';
+  }
+  
+  $query_key = base64_encode(serialize($_GET));
+  if (!empty($query_key)) {
+    $url .= '/' . $query_key;
+  }
+
+  $url = url($url, array('query' => array('destination' => url($_GET['q']), 'redirect' => url($_GET['q']))));
+  $id = uniqid('ajax-pane-' . $pane->pid . '-');
+
+  drupal_add_js(drupal_get_path('module', 'ajax_pane') . '/js/ajax_pane.js');
+  unset($content->title);
+  $content->content = '<div id="' . $id . '" class="ajax-pane">&nbsp;</div>';
+  drupal_add_js('jQuery(function() { AJAXPaneLoad(\'' . $id . '\', \'' . $url . '\'); });', 'inline');
+
+  $content->use_ajax_render = TRUE;
+}
+
+/**
+ * Each of the panel task plugins provides a default context based on the menu
+ * path.
+ * This function looks up the menu handler for a URL, and provides the contexts
+ * for the menu-handler.
+ */
+function ajax_pane_panels_get_task_context($task_name) {
+  $task = page_manager_get_task($task_name);
+  
+  // Invoke the module's hook_esi_get_context_arguments to get the context
+  // provided by that task.
+  $context_arguments = module_invoke($task['module'], 'ajax_pane_get_context_arguments', $task['name']);
+
+  // Parse the arguments into context objects.
+  ctools_include('context');
+  ctools_include('context-task-handler');
+  $contexts = ctools_context_handler_get_task_contexts($task, '', $context_arguments);
+
+  return array($context_arguments, $contexts);
+}
+
+/**
+ * Implementation of hook_ajax_pane_get_context_arguments, provided for page_manager.
+ */
+function page_manager_ajax_pane_get_context_arguments($task_name) {
+  switch ($task_name) {
+    // The blog, poll, and contact_site tasks don't provide default context.
+    case 'blog':
+    case 'poll':
+    case 'contact_site':
+      return array();
+
+    // The blog_user, and contact_user tasks provide a user-object.
+    case 'blog_user':
+    case 'contact_user':
+      $uid = arg(1);
+      $account = user_load($uid);
+      return array($account);
+
+    // The comment_reply task provide a node object and a comment CID.
+    case 'comment_reply':
+      // Path is comment/reply/%node
+      $nid = arg(2);
+      $pid = arg(3);
+      $node = node_load($nid);
+      return array($node, $pid);
+
+      // The node_edit and node_view tasks provide a node object.
+    case 'node_edit':
+    case 'node_view':
+      $nid = arg(1);
+      $node = node_load($nid);
+      return array($nid);
+
+    case 'search':
+      // @TODO.
+      // return array($keys);
+
+    case 'term_view':
+      // @TODO.
+      //  return array($terms, $depth);
+  }
+}

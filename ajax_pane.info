@@ -1,1 +1,5 @@
-name = Ajax pane
+name = Ajax pane 
+description = "Adding a possibility to load a pane through AJAX"
+package = Caching
+core = 7.x
+files[] = ajax_pane.module
