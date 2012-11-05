@@ -43,9 +43,11 @@ function ajax_pane_ctools_plugin_directory($module, $plugin) {
  * be set.
  */
 function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL, $context_string = NULL, $request_q = '') {
-  require_once DRUPAL_ROOT . '/sites/all/modules/contrib/panels/plugins/display_renderers/panels_renderer_standard.class.php';
-  require_once DRUPAL_ROOT . '/sites/all/modules/contrib/panels/includes/plugins.inc';
-  require_once DRUPAL_ROOT . '/sites/all/modules/contrib/ctools/includes/content.inc';
+
+  module_load_include('inc', 'panels', 'includes/plugins');
+  module_load_include('inc', 'ctools', 'includes/content');
+  module_load_include('php', 'panels', 'plugins/display_renderers/panels_renderer_standard.class');
+
   $context_args = array();
   if (!empty($request_q)) {
     $context_args = ajax_pane_decode_query($request_q);
