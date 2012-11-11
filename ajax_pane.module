@@ -2,7 +2,7 @@
 /**
  *
  * @file ajax_pane.module
- * 
+ *
  */
 
 define('AJAX_PANE_PANELS_REQUIRED_CTOOLS_API', '1.7.2');
@@ -53,7 +53,7 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
     $context_args = ajax_pane_decode_query($request_q);
   }
 
-  $display = panels_load_display($display_id);    
+  $display = panels_load_display($display_id);
 
   if (!is_null($task_name)) {
     // Get the context for this pane.
@@ -63,7 +63,6 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
     $display->args = $args;
   }
 
-  $display = panels_load_display($display_id);
   $pane = $display->content[$pane_id];
   $renderer = panels_get_renderer_handler('standard', $display);
 
@@ -120,7 +119,7 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
     $url .= '/' . $pane->configuration['context'];
   }
   else{
-    // add dummy strings so I keep the same 
+    // add dummy strings so I keep the same
     // order in the parser
 
     // Add the page-manager task name.
@@ -128,7 +127,7 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
     // Add the name of the context which is supplied to this pane.
     $url .= '/n';
   }
-  
+
   $query_key = base64_encode(serialize($_GET));
   if (!empty($query_key)) {
     $url .= '/' . $query_key;
@@ -153,7 +152,7 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
  */
 function ajax_pane_panels_get_task_context($task_name) {
   $task = page_manager_get_task($task_name);
-  
+
   // Invoke the module's hook_esi_get_context_arguments to get the context
   // provided by that task.
   $context_arguments = module_invoke($task['module'], 'ajax_pane_get_context_arguments', $task['name']);
