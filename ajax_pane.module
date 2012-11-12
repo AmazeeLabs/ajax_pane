@@ -152,8 +152,7 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
 
   unset($content->title);
 
-  $content->content = '<div id="' . $id . '" class="ajax-pane">&nbsp;</div>';
-  drupal_add_js('jQuery(function() { AJAXPaneLoad(\'' . $id . '\', \'' . $url . '\'); });', 'inline');
+  $content->content = '<div id="' . $id . '" class="ajax-pane" src="' . $url . '">&nbsp;</div>';
 
   $content->use_ajax_render = TRUE;
 }
