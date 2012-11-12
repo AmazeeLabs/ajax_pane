@@ -1,14 +1,13 @@
 <?php
-// $Id$
 
 /**
  * @file
  * AJAX pane cache plugin.
  */
 
-// Plugin definition
+// Plugin definition.
 $plugin = array(
-  'title' => t("AJAX pane"),
+  'title' => t('AJAX pane'),
   'description' => t('AJAX pane. Panes are rendered as wrappers which wrappers will be replaced by javascript.'),
   'cache get' => 'ajax_pane_cache_get_cache',
   'cache set' => 'ajax_pane_cache_set_cache',
@@ -24,9 +23,9 @@ $plugin = array(
  * Get cached content.
  */
 function ajax_pane_cache_get_cache($conf, $display, $args, $contexts, $pane = NULL) {
-  // We do not need cache because a lot of custom panes add javascript in render function
-  // and this cause unexpected behavior
-  
+  // We do not need cache because a lot of custom panes add javascript in render
+  // function and this cause unexpected behavior.
+
 //  if (!empty($pane) && empty($display->content[$pane->pid]->ajax_render)) {
 //    $cid = ajax_pane_get_id($conf, $display, $args, $contexts, $pane);
 //    $cache_table = variable_get('ajax_pane_cache_table', 'cache');
@@ -34,20 +33,20 @@ function ajax_pane_cache_get_cache($conf, $display, $args, $contexts, $pane = NU
 //    if (!$cache) {
 //      return FALSE;
 //    }
-//  
+//
 //    if ((time() - $cache->created) > $conf['lifetime']) {
 //      return FALSE;
 //    }
-//  
-//    //Add the javascript to the page you render. 
+//
+//    // Add the javascript to the page you render.
 //    drupal_add_js(drupal_get_path('module', 'ajax_pane') . '/js/ajax_pane.js');
-//  
+//
 //    return $cache->data;
 //  }
 }
 
 /**
- * Set cached content.
+ * Sets cached content.
  */
 function ajax_pane_cache_set_cache($conf, $content, $display, $args, $contexts, $pane = NULL) {
 //  if (!empty($pane) && !empty($content->content->use_ajax_render)) {
@@ -58,7 +57,7 @@ function ajax_pane_cache_set_cache($conf, $content, $display, $args, $contexts, 
 }
 
 /**
- * Clear cached content.
+ * Clears cached content.
  *
  * Cache clears are always for an entire display, regardless of arguments.
  */
@@ -69,7 +68,7 @@ function ajax_pane_cache_clear_cache($display) {
 }
 
 /**
- * Figure out an id for our cache based upon input and settings.
+ * Figures out an id for our cache based upon input and settings.
  */
 function ajax_pane_get_id($conf, $display, $args, $contexts, $pane) {
   $id = 'panels_ajax_cache';
@@ -77,29 +76,35 @@ function ajax_pane_get_id($conf, $display, $args, $contexts, $pane) {
   if ($pane) {
     $id .= ':' . $pane->pid;
   }
-  
+
   return $id;
 }
 
 /**
- * 
+ * Settings form.
  */
 function ajax_pane_cache_settings_form($conf, $display, $pid) {
-  
-  $options = drupal_map_assoc(array(15, 30, 60, 120, 180, 240, 300, 600, 900, 1200, 1800, 3600, 7200, 14400, 28800, 43200, 86400, 172800, 259200, 345600, 604800), 'format_interval');
+  $intervals = array(
+    15, 30, 60, 120, 180, 240, 300, 600, 900, 1200, 1800, 3600, 7200, 14400,
+    28800, 43200, 86400, 172800, 259200, 345600, 604800,
+  );
+  $options = drupal_map_assoc($intervals, 'format_interval');
+
   $form['lifetime'] = array(
     '#title' => t('Lifetime'),
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => $conf['lifetime'],
   );
-  
+
   return $form;
 }
 
 /**
- * 
+ * Settings form submit callback.
+ *
+ * @todo Should this do something?
  */
 function ajax_pane_cache_settings_form_submit($form, &$form_state) {
-  
+
 }

@@ -1,14 +1,17 @@
 <?php
+
 /**
- *
- * @file ajax_pane.module
- *
+ * @file
+ * ajax_pane.module
  */
 
+/**
+ * CTools api version.
+ */
 define('AJAX_PANE_PANELS_REQUIRED_CTOOLS_API', '1.7.2');
 
 /**
- * Implementation of hook_menu.
+ * Implements hook_menu().
  */
 function ajax_pane_menu() {
   return array(
@@ -17,20 +20,20 @@ function ajax_pane_menu() {
       'page callback' => 'ajax_pane_panels_pane_handler',
       'page arguments' => array(2, 3),
       'access callback' => TRUE,
-      'type' => MENU_CALLBACK
+      'type' => MENU_CALLBACK,
     ),
   );
 }
 
-
 /**
- * Implementation of hook_ctools_plugin_directory().
+ * Implements hook_ctools_plugin_directory().
  */
 function ajax_pane_ctools_plugin_directory($module, $plugin) {
   // Safety: go away if CTools is not at an appropriate version.
   if (!module_invoke('ctools', 'api_version', AJAX_PANE_PANELS_REQUIRED_CTOOLS_API)) {
     return;
   }
+
   if ($module == 'page_manager' || $module == 'panels' || $module == 'ctools') {
     return 'plugins/' . $plugin;
   }
@@ -67,19 +70,39 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
   $renderer = panels_get_renderer_handler('standard', $display);
 
   $panel_renderer = new panels_renderer_standard();
-  $panel_renderer->init($renderer->plugin,$display);
+  $panel_renderer->init($renderer->plugin, $display);
 
-  $content = ctools_content_render($pane->type, $pane->subtype, $pane->configuration, array(), $panel_renderer->display->args, $panel_renderer->display->context);
-  $content = theme('panels_pane', array('content' => $content, 'pane' => $pane, 'display' => $panel_renderer->display));
+  // Render content.
+  $content = ctools_content_render(
+    $pane->type,
+    $pane->subtype,
+    $pane->configuration,
+    array(),
+    $panel_renderer->display->args,
+    $panel_renderer->display->context
+  );
 
-  echo $content;
+  $variables = array(
+    'content' => $content,
+    'pane' => $pane,
+    'display' => $panel_renderer->display,
+  );
+
+  echo theme('panels_pane', $variables);
+
   die();
 }
 
 /**
- * Decode the query string passed
- * @param string
+ * Decodes a serialized query string.
+ *
+ * Also sets $_GET and $_REQUEST variables.
+ *
+ * @param string $query
+ *   A query string that is serialized encoded and base64 encoded.
+ *
  * @return array
+ *   The decoded query array.
  */
 function ajax_pane_decode_query($query) {
   $query = unserialize(base64_decode($query));
@@ -94,7 +117,7 @@ function ajax_pane_decode_query($query) {
 
 
 /**
- * Implementation of hook_panels_pane_content_alter().
+ * Implements hook_panels_pane_content_alter().
  */
 function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   // Bail out if it's not handled by AJAX Pane.
@@ -118,10 +141,8 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
     // Add the name of the context which is supplied to this pane.
     $url .= '/' . $pane->configuration['context'];
   }
-  else{
-    // add dummy strings so I keep the same
-    // order in the parser
-
+  else {
+    // Add dummy strings so I keep the same order in the parser.
     // Add the page-manager task name.
     $url .= '/n';
     // Add the name of the context which is supplied to this pane.
@@ -145,10 +166,10 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
 }
 
 /**
+ * Looks up the menu handler for a URL, and provides the correct contexts.
+ *
  * Each of the panel task plugins provides a default context based on the menu
  * path.
- * This function looks up the menu handler for a URL, and provides the contexts
- * for the menu-handler.
  */
 function ajax_pane_panels_get_task_context($task_name) {
   $task = page_manager_get_task($task_name);
@@ -166,7 +187,9 @@ function ajax_pane_panels_get_task_context($task_name) {
 }
 
 /**
- * Implementation of hook_ajax_pane_get_context_arguments, provided for page_manager.
+ * Implements hook_ajax_pane_get_context_arguments().
+ *
+ * On behalf implementation of Ajax panes api for page_manager.module.
  */
 function page_manager_ajax_pane_get_context_arguments($task_name) {
   switch ($task_name) {
@@ -191,7 +214,7 @@ function page_manager_ajax_pane_get_context_arguments($task_name) {
       $node = node_load($nid);
       return array($node, $pid);
 
-      // The node_edit and node_view tasks provide a node object.
+    // The node_edit and node_view tasks provide a node object.
     case 'node_edit':
     case 'node_view':
       $nid = arg(1);
@@ -199,11 +222,8 @@ function page_manager_ajax_pane_get_context_arguments($task_name) {
       return array($nid);
 
     case 'search':
-      // @TODO.
-      // return array($keys);
-
+      // @todo return array($keys);
     case 'term_view':
-      // @TODO.
-      //  return array($terms, $depth);
+      // @todo return array($terms, $depth);
   }
 }
