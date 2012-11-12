@@ -47,9 +47,8 @@ function ajax_pane_ctools_plugin_directory($module, $plugin) {
  */
 function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL, $context_string = NULL, $request_q = '') {
 
-  module_load_include('inc', 'panels', 'includes/plugins');
-  module_load_include('inc', 'ctools', 'includes/content');
-  module_load_include('php', 'panels', 'plugins/display_renderers/panels_renderer_standard.class');
+  ctools_include('plugins', 'panels');
+  ctools_include('content');
 
   $context_args = array();
   if (!empty($request_q)) {
@@ -67,25 +66,15 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
   }
 
   $pane = $display->content[$pane_id];
-  $renderer = panels_get_renderer_handler('standard', $display);
 
-  $panel_renderer = new panels_renderer_standard();
-  $panel_renderer->init($renderer->plugin, $display);
-
-  // Render content.
-  $content = ctools_content_render(
-    $pane->type,
-    $pane->subtype,
-    $pane->configuration,
-    array(),
-    $panel_renderer->display->args,
-    $panel_renderer->display->context
-  );
+  // Set flag so that we don't rewrite content.
+  $pane->ajax_rendering = TRUE;
+  $renderer = panels_get_renderer_handler($display->renderer, $display);
 
   $variables = array(
-    'content' => $content,
+    'content' => $renderer->render_pane_content($pane),
     'pane' => $pane,
-    'display' => $panel_renderer->display,
+    'display' => $display,
   );
 
   echo theme('panels_pane', $variables);
@@ -121,10 +110,12 @@ function ajax_pane_decode_query($query) {
  */
 function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   // Bail out if it's not handled by AJAX Pane.
-  if (empty($pane->cache)) {
+  if (empty($pane->cache) || $pane->cache['method'] != 'ajax_pane') {
     return;
   }
-  if (!is_array($pane->cache) || $pane->cache['method'] != 'ajax_pane') {
+
+  // Don't rewrite content. This is the ajax call.
+  if (!empty($pane->ajax_rendering)) {
     return;
   }
 
@@ -158,7 +149,9 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   $id = uniqid('ajax-pane-' . $pane->pid . '-');
 
   drupal_add_js(drupal_get_path('module', 'ajax_pane') . '/js/ajax_pane.js');
+
   unset($content->title);
+
   $content->content = '<div id="' . $id . '" class="ajax-pane">&nbsp;</div>';
   drupal_add_js('jQuery(function() { AJAXPaneLoad(\'' . $id . '\', \'' . $url . '\'); });', 'inline');
 
