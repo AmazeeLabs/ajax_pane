@@ -85,7 +85,7 @@ function ajax_pane_get_id($conf, $display, $args, $contexts, $pane) {
  */
 function ajax_pane_cache_settings_form($conf, $display, $pid) {
   $intervals = array(
-    1, 15, 30, 60, 120, 180, 240, 300, 600, 900, 1200, 1800, 3600, 7200, 14400,
+    1, 5, 10, 15, 30, 60, 120, 180, 240, 300, 600, 900, 1200, 1800, 3600, 7200, 14400,
     28800, 43200, 86400, 172800, 259200, 345600, 604800,
   );
   $options = drupal_map_assoc($intervals, 'format_interval');
@@ -95,6 +95,13 @@ function ajax_pane_cache_settings_form($conf, $display, $pid) {
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => $conf['lifetime'],
+  );
+
+  $form['refresh_time'] = array(
+    '#title' => t('Refresh time'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => $conf['refresh_time'],
   );
 
   return $form;

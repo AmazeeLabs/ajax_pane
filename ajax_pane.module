@@ -151,8 +151,9 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   drupal_add_js(drupal_get_path('module', 'ajax_pane') . '/js/ajax_pane.js');
 
   unset($content->title);
+  $refresh_time = $pane->cache['settings']['refresh_time'];
 
-  $content->content = '<div id="' . $id . '" class="ajax-pane" src="' . $url . '">&nbsp;</div>';
+  $content->content = '<div id="' . $id . '" class="ajax-pane" src="' . $url . '" rt="' . $refresh_time . '">&nbsp;</div>';
 
   $content->use_ajax_render = TRUE;
 }
