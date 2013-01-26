@@ -30,6 +30,8 @@
 		// @todo: would be nice if we could use replaceWith() and not html().
 	    // element.replaceWith(response);
 	    element.html(response);
+	    // Attach the behaviors on the new element.
+	    Drupal.attachBehaviors(element);
 	  }
 	});
   }
