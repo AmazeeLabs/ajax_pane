@@ -15,7 +15,7 @@ define('AJAX_PANE_PANELS_REQUIRED_CTOOLS_API', '1.7.2');
  */
 function ajax_pane_menu() {
   return array(
-    'ajax-pane/get-pane/%/%' => array(
+    'vajax-pane/get-pane/%/%' => array(
       'title' => 'AJAX pane handler',
       'page callback' => 'ajax_pane_panels_pane_handler',
       'page arguments' => array(2, 3),
@@ -76,7 +76,7 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
     'pane' => $pane,
     'display' => $display,
   );
-
+  drupal_add_http_header('Cache-Control', 'public, max-age=10');
   echo theme('panels_pane', $variables);
 
   die();
@@ -125,7 +125,7 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   list($context, $task_name, $handler_name) = explode(':', $display->cache_key);
 
   // Build the esi tag.
-  $url = "ajax-pane/get-pane/{$pane->did}/{$pane->pid}";
+  $url = "vajax-pane/get-pane/{$pane->did}/{$pane->pid}";
   if (array_key_exists('context', $pane->configuration)) {
     // Add the page-manager task name.
     $url .= '/' . $task_name;
