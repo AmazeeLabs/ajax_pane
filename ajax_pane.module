@@ -76,7 +76,7 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
     'pane' => $pane,
     'display' => $display,
   );
-  drupal_add_http_header('Cache-Control', 'public, max-age=10');
+  drupal_add_http_header('Cache-Control', 'public, max-age=9');
   echo theme('panels_pane', $variables);
 
   die();
