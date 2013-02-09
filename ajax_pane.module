@@ -45,7 +45,7 @@ function ajax_pane_ctools_plugin_directory($module, $plugin) {
  * If the pane uses context, the task_name, context_string and q variables will
  * be set.
  */
-function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL, $context_string = NULL, $request_q = '') {
+function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL, $context_string = NULL, $request_q = '', $display_args) {
 
   ctools_include('plugins', 'panels');
   ctools_include('content');
@@ -56,10 +56,11 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
   }
 
   $display = panels_load_display($display_id);
-
+  // This is display arguments, that must be passed to the view.
+  $args = ajax_pane_decode_query($display_args);
   if (!is_null($task_name)) {
     // Get the context for this pane.
-    list($args, $contexts) = ajax_pane_panels_get_task_context($task_name);
+    list($args, $contexts) = ajax_pane_panels_get_task_context($task_name, $args);
 
     $display->context = $contexts;
     $display->args = $args;
@@ -120,6 +121,7 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   }
 
   $display = panels_get_current_page_display();
+  $display_args = $display->args;
 
   // The cache-key variable is set by the panel-context render function.
   list($context, $task_name, $handler_name) = explode(':', $display->cache_key);
@@ -144,6 +146,14 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   if (!empty($query_key)) {
     $url .= '/' . $query_key;
   }
+  else {
+    $url .= '/n';
+  }
+
+  $args_key = base64_encode(serialize($display_args));
+  if (!empty($args_key)) {
+    $url .= '/' . $args_key;
+  }
 
   $url = url($url, array('query' => array('destination' => url($_GET['q']), 'redirect' => url($_GET['q']))));
   $id = uniqid('ajax-pane-' . $pane->pid . '-');
@@ -163,17 +173,20 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
  * Each of the panel task plugins provides a default context based on the menu
  * path.
  */
-function ajax_pane_panels_get_task_context($task_name) {
-  $task = page_manager_get_task($task_name);
+function ajax_pane_panels_get_task_context($task_name, $args) {
+  $task_id = page_manager_get_task_id($task_name);
+  $task = page_manager_get_task($task_id[0]);
+  $subtask = page_manager_page_subtask($task[0],$task_id[1]);
 
   // Invoke the module's hook_esi_get_context_arguments to get the context
   // provided by that task.
   $context_arguments = module_invoke($task['module'], 'ajax_pane_get_context_arguments', $task['name']);
+  $context_arguments = array_merge((array)$context_arguments,$args);
 
   // Parse the arguments into context objects.
   ctools_include('context');
   ctools_include('context-task-handler');
-  $contexts = ctools_context_handler_get_task_contexts($task, '', $context_arguments);
+  $contexts = ctools_context_handler_get_task_contexts($task, $subtask, $context_arguments);
 
   return array($context_arguments, $contexts);
 }
