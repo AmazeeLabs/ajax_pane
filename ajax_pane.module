@@ -176,7 +176,13 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
 function ajax_pane_panels_get_task_context($task_name, $args) {
   $task_id = page_manager_get_task_id($task_name);
   $task = page_manager_get_task($task_id[0]);
-  $subtask = page_manager_page_subtask($task[0],$task_id[1]);
+
+  if (is_array($task)) {
+    $subtask = page_manager_page_subtask($task[0], $task_id[1]);
+  }
+  else {
+    $subtask = page_manager_page_subtask($task, $task_id[1]);
+  }
 
   // Invoke the module's hook_esi_get_context_arguments to get the context
   // provided by that task.
