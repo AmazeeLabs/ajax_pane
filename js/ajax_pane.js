@@ -17,6 +17,7 @@
           dataType: 'html',
           success: function (response) {
             element.replaceWith(response);
+            Drupal.attachBehaviors();
           }
         });
       });
