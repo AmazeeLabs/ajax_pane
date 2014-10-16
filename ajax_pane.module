@@ -122,6 +122,14 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
 
   $display = panels_get_current_page_display();
   $display_args = $display->args;
+  foreach ($display_args as $key => $value) {
+    // The content value can be very big (especially when using on the default
+    // site template) and the URL that will result will be bigger than allowed.
+    // @todo: make sure this will not generate some side effects!
+    if (is_object($value) && !empty($value->content)) {
+      unset($display_args[$key]->content);
+    }
+  }
 
   // The cache-key variable is set by the panel-context render function.
   list($context, $task_name, $handler_name) = explode(':', $display->cache_key);
