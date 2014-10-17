@@ -78,9 +78,10 @@ function ajax_pane_panels_pane_handler($display_id, $pane_id, $task_name = NULL,
     'display' => $display,
   );
 
-  echo theme('panels_pane', $variables);
-
-  die();
+  $commands = array();
+  $commands[] = ajax_command_replace('#' . $context_args['pane_id'], theme('panels_pane', $variables));
+  print ajax_render($commands);
+  exit();
 }
 
 /**
@@ -150,7 +151,8 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
     $url .= '/n';
   }
 
-  $query_key = base64_encode(serialize($_GET));
+  $id = uniqid('ajax-pane-' . $pane->pid . '-');
+  $query_key = base64_encode(serialize($_GET + array('pane_id' => $id)));
   if (!empty($query_key)) {
     $url .= '/' . $query_key;
   }
@@ -164,13 +166,13 @@ function ajax_pane_panels_pane_content_alter($content, $pane, $args, $context) {
   }
 
   $url = url($url, array('query' => array('destination' => url($_GET['q']), 'redirect' => url($_GET['q']))));
-  $id = uniqid('ajax-pane-' . $pane->pid . '-');
 
   drupal_add_js(drupal_get_path('module', 'ajax_pane') . '/js/ajax_pane.js');
 
   unset($content->title);
 
-  $content->content = '<div id="' . $id . '" class="ajax-pane" src="' . $url . '">&nbsp;</div>';
+  drupal_add_library('system', 'drupal.ajax');
+  $content->content = '<a id="' . $id . '" class="ajax-pane use-ajax" href="' . $url . '">&nbsp;</a>';
 
   $content->use_ajax_render = TRUE;
 }
